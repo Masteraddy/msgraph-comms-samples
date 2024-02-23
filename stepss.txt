@@ -1,0 +1,13 @@
+APP Client ID = 76537c97-4734-4b72-9d17-53060e8a2106
+Object ID = 1f01584f-97b4-40dc-86e3-42f0a300fded
+Tenant ID = e44afcaf-ee13-4e7b-b0fc-8914d754ecfe
+APP Client Secret = XRV8Q~agcugihRPQ_BZbxsvlNlg0WiMS2oTr9an0
+Secret ID = 673b8b48-371a-4db8-a92a-3afa603d6898
+
+localadmin password VMSS Admin Password: MyPOPBot2024@
+
+SpeechConfigKey: 3b5382794f3c4757ae2635f9e1bd92fe
+SpeechConfigRegion: eastus
+BotLanguage: en-Us
+
+b.bot.mypop.ai
