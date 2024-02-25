@@ -30,7 +30,7 @@ namespace EchoBot.Util
             {
                 Scheme = req.Scheme,
                 Host = req.Host.Host,
-                Port = req.Host.Port.Value,
+                Port = req.Host.Port.GetValueOrDefault(),
                 Path = req.PathBase.Add(req.Path),
                 Query = req.QueryString.ToString()
             }.Uri);

@@ -29,6 +29,8 @@ namespace EchoBot.Media
         private readonly SpeechConfig _speechConfig;
         private SpeechRecognizer _recognizer;
         private readonly SpeechSynthesizer _synthesizer;
+        public string speaker;
+        private string alltranscript;
         /// <summary>
         /// Initializes a new instance of the <see cref="SpeechService" /> class.
         public SpeechService(AppSettings settings, ILogger logger)
@@ -48,7 +50,7 @@ namespace EchoBot.Media
         /// Appends the audio buffer.
         /// </summary>
         /// <param name="audioBuffer"></param>
-        public async Task AppendAudioBuffer(AudioMediaBuffer audioBuffer)
+        public async Task AppendAudioBuffer(object? sender, AudioMediaBuffer audioBuffer)
         {
             if (!_isRunning)
             {
@@ -62,6 +64,9 @@ namespace EchoBot.Media
                 var bufferLength = audioBuffer.Length;
                 if (bufferLength > 0)
                 {
+                    if(sender != null){
+                        speaker = sender.ToString();
+                    }
                     var buffer = new byte[bufferLength];
                     Marshal.Copy(audioBuffer.Data, buffer, 0, (int)bufferLength);
 
@@ -153,7 +158,10 @@ namespace EchoBot.Media
                         _logger.LogInformation($"RECOGNIZED: Text={e.Result.Text}");
                         // We recognized the speech
                         // Now do Speech to Text
-                        await TextToSpeech(e.Result.Text);
+                        // await TextToSpeech(e.Result.Text);
+                        // if(sender != null){;
+                        alltranscript += $"{speaker}: {e.Result.Text}\n";
+                        // }
                     }
                     else if (e.Result.Reason == ResultReason.NoMatch)
                     {
@@ -178,7 +186,7 @@ namespace EchoBot.Media
                 _recognizer.SessionStarted += async (s, e) =>
                 {
                     _logger.LogInformation("\nSession started event.");
-                    await TextToSpeech("Hello");
+                    // await TextToSpeech("Hello");
                 };
 
                 _recognizer.SessionStopped += (s, e) =>
@@ -211,22 +219,27 @@ namespace EchoBot.Media
             _isDraining = false;
         }
 
-        private async Task TextToSpeech(string text)
+        public string GetTranscript()
         {
-            // convert the text to speech
-            SpeechSynthesisResult result = await _synthesizer.SpeakTextAsync(text);
-            // take the stream of the result
-            // create 20ms media buffers of the stream
-            // and send to the AudioSocket in the BotMediaStream
-            using (var stream = AudioDataStream.FromResult(result))
-            {
-                var currentTick = DateTime.Now.Ticks;
-                MediaStreamEventArgs args = new MediaStreamEventArgs
-                {
-                    AudioMediaBuffers = Util.Utilities.CreateAudioMediaBuffers(stream, currentTick, _logger)
-                };
-                OnSendMediaBufferEventArgs(this, args);
-            }
+            return alltranscript;
         }
+
+        // private async Task TextToSpeech(string text)
+        // {
+        //     // convert the text to speech
+        //     SpeechSynthesisResult result = await _synthesizer.SpeakTextAsync(text);
+        //     // take the stream of the result
+        //     // create 20ms media buffers of the stream
+        //     // and send to the AudioSocket in the BotMediaStream
+        //     using (var stream = AudioDataStream.FromResult(result))
+        //     {
+        //         var currentTick = DateTime.Now.Ticks;
+        //         MediaStreamEventArgs args = new MediaStreamEventArgs
+        //         {
+        //             AudioMediaBuffers = Util.Utilities.CreateAudioMediaBuffers(stream, currentTick, _logger)
+        //         };
+        //         OnSendMediaBufferEventArgs(this, args);
+        //     }
+        // }
     }
 }

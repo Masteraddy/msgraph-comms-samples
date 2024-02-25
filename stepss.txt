@@ -1,3 +1,19 @@
+Step 1: run ngrok with ngrok start --all --config ngrok.yml
+
+Step 2: add the TCP of ngrok to domain CNAME 
+
+Step 3: Generate the Certificate Thumbprint with Get-PfxCertificate -FilePath Certificate.pfx 
+
+Or 
+
+openssl pkcs12 -info -in Certificate.pfx
+
+Step 4: Add the certificate thumbprint to the config.json
+
+Step 5: Run code
+    dotnet run --project src\EchoBot\EchoBot.csproj
+
+
 APP Client ID = 76537c97-4734-4b72-9d17-53060e8a2106
 Object ID = 1f01584f-97b4-40dc-86e3-42f0a300fded
 Tenant ID = e44afcaf-ee13-4e7b-b0fc-8914d754ecfe

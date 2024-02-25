@@ -51,6 +51,10 @@ namespace EchoBot.Bot
         private List<AudioMediaBuffer> audioMediaBuffers = new List<AudioMediaBuffer>();
         private int shutdown;
         private readonly SpeechService _languageService;
+        private string? dominantSpeaker;
+        private string CallId { get; }
+        private bool isSent = false;
+        private static readonly HttpClient client = new HttpClient();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BotMediaStream" /> class.
@@ -66,7 +70,8 @@ namespace EchoBot.Bot
             string callId,
             IGraphLogger graphLogger,
             ILogger logger,
-            AppSettings settings
+            AppSettings settings,
+            string threadId
         )
             : base(graphLogger)
         {
@@ -78,6 +83,7 @@ namespace EchoBot.Bot
             _logger = logger;
 
             this.participants = new List<IParticipant>();
+            this.dominantSpeaker = null;
 
             this.audioSendStatusActive = new TaskCompletionSource<bool>();
             this.startVideoPlayerCompleted = new TaskCompletionSource<bool>();
@@ -100,6 +106,7 @@ namespace EchoBot.Bot
                 _languageService = new SpeechService(_settings, _logger);
                 _languageService.SendMediaBuffer += this.OnSendMediaBuffer;
             }
+            this.CallId = threadId;
         }
 
         /// <summary>
@@ -109,6 +116,13 @@ namespace EchoBot.Bot
         public List<IParticipant> GetParticipants()
         {
             return participants;
+        }
+
+        public string GetDominantSpeakerName(){
+            if(dominantSpeaker != null){
+                return dominantSpeaker;
+            }
+            return "Guest";
         }
 
         /// <summary>
@@ -123,6 +137,23 @@ namespace EchoBot.Bot
             }
 
             await this.startVideoPlayerCompleted.Task.ConfigureAwait(false);
+
+            var alltranscript = this._languageService?.GetTranscript();
+            if (alltranscript != null && !isSent)
+            {
+                // TODO: Send to Server
+                isSent = true;
+                var data = new Dictionary<string, string>
+                {
+                    { "meetingId", this.CallId },
+                    { "type", "teams" },
+                    { "transcript", alltranscript }
+                };
+                // var content = new FormUrlEncodedContent(data);
+                var content = new FormUrlEncodedContent(data);
+                await client.PostAsync("https://eva.trivoh.com/api/transcript", content);
+                // await client.PostAsync("http://localhost:3030/api/transcript", content);
+            }
 
             // unsubscribe
             if (this._audioSocket != null)
@@ -203,13 +234,25 @@ namespace EchoBot.Bot
 
             try
             {
+                IParticipant? participant = null;
+                if(e.Buffer.ActiveSpeakers.Length > 0){
+                // e.Buffer.UnmixedAudioBuffers.ForEach(void (UnmixedAudioBuffer data) => {
+                //     Console.WriteLine($"Received Audio Unmixed: {data.ActiveSpeakerId}");
+                // });
+                    participant = participants.SingleOrDefault(x => x.Resource.MediaStreams.Any(y => y.SourceId == e.Buffer.ActiveSpeakers[0].ToString()));
+                    
+                    this.dominantSpeaker = participant?.Resource?.Info?.Identity?.User?.DisplayName;
+                    if(this.dominantSpeaker == null){
+                        this.dominantSpeaker = "Guest";
+                    }
+                }
                 if (!startVideoPlayerCompleted.Task.IsCompleted) { return; }
 
                 if (_languageService != null)
                 {
                     // send audio buffer to language service for processing
                     // the particpant talking will hear the bot repeat what they said
-                    await _languageService.AppendAudioBuffer(e.Buffer);
+                    await _languageService.AppendAudioBuffer(this.dominantSpeaker, e.Buffer);
                     e.Buffer.Dispose();
                 }
                 else
@@ -243,6 +286,18 @@ namespace EchoBot.Bot
         {
             this.audioMediaBuffers = e.AudioMediaBuffers;
             var result = Task.Run(async () => await this.audioVideoFramePlayer.EnqueueBuffersAsync(this.audioMediaBuffers, new List<VideoMediaBuffer>())).GetAwaiter();
+        }
+
+        /// <summary>
+        /// Gets the participant with the corresponding MSI.
+        /// </summary>
+        /// <param name="msi">media stream id.</param>
+        /// <returns>
+        /// The <see cref="IParticipant"/>.
+        /// </returns>
+        private static IParticipant? GetParticipantFromMSI(ICall call, uint msi)
+        {
+            return call.Participants.SingleOrDefault(x => x.Resource.IsInLobby == false && x.Resource.MediaStreams.Any(y => y.SourceId == msi.ToString()));
         }
     }
 }

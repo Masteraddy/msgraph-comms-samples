@@ -39,10 +39,11 @@ namespace EchoBot.Bot
             : base(TimeSpan.FromMinutes(10), statefulCall?.GraphLogger)
         {
             this.Call = statefulCall;
+            var threadId = this.Call.Resource?.ChatInfo?.ThreadId;
             this.Call.OnUpdated += this.CallOnUpdated;
             this.Call.Participants.OnUpdated += this.ParticipantsOnUpdated;
 
-            this.BotMediaStream = new BotMediaStream(this.Call.GetLocalMediaSession(), this.Call.Id, this.GraphLogger, logger, settings);
+            this.BotMediaStream = new BotMediaStream(this.Call.GetLocalMediaSession(), this.Call.Id, this.GraphLogger, logger, settings, threadId);
         }
 
         /// <inheritdoc/>
