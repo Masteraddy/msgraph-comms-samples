@@ -6,16 +6,14 @@ on:
   # https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows
   push:
     branches: ["master"]
-      # - 'master'
     paths:
-      - './Samples/PublicSamples/EchoBot/ADF/**'
+      - "./Samples/PublicSamples/EchoBot/ADF/**"
       - .github/workflows/echobot-infra-MYPOP2.yml
 
   pull_request:
     branches: ["master"]
-      # - 'master'
     paths:
-      - './Samples/PublicSamples/EchoBot/ADF/**'
+      - "./Samples/PublicSamples/EchoBot/ADF/**"
       - .github/workflows/echobot-infra-MYPOP2.yml
 
   # Allows you to run this workflow manually from the Actions tab
@@ -60,6 +58,3 @@ jobs:
             if ($e){throw $e}
         env:
           VMSS_CREDENTIALS: ${{ secrets.VMSS_CREDENTIALS_MYPOP2_BOT }}
-
-
-
